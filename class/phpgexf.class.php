@@ -14,6 +14,9 @@
 		private $nodes;
 		private $edges;
 
+		private $allowedMetadata;
+		private $allowedNodeShapeArray;
+
 		public function __construct()
 		{
 			$this->init();
@@ -36,7 +39,7 @@
 		// Create basic DOM template
 		private function constructDom()
 		{
-			$this->xml = new DomDocument('1.0', 'UTF-8');
+			$this->xml = new DomDocument($this->$gexfVersion, $this->$characterEncoding);
 			$this->xml->formatOutput = true;
 			$this->gexf = $this->xml->createElementNS(null, 'gexf');
 			$this->gexf = $this->xml->appendChild($this->gexf);
@@ -88,14 +91,47 @@
 			}
 		}
 
-
-		public function addNode($id, $label) {}
+		public function addNode($id, $label)
+		{
+			$node = $xml->createElement('node');
+			//$node->setAttribute('id', '1');
+			//$node->setAttribute('label', 'Hello world!');
+			$nodes->appendChild($node);
+		}
 		public function addEdge($source, $target) {}
 
-		// VIZ
-		public function addColor($r, $g, $b) {}
-		public function addPosition($x, $y, $z) {}
-		public function addSize($size) {}
+		// VIZ http://gexf.net/1.2draft/viz.xsd
+		public function addColor($r, $g, $b, $alpha, $start, $startopen, $end, $endopen) {} // RGB req, a
+		public function addPosition($x, $y, $z, $start, $startopen, $end, $endopen) {}
+		public function addSize($value, $start, $startopen, $end, $endopen) {}
+		public function addThickness($value, $start, $startopen, $end, $endopen) {}
+		public function addNodeShape($value, $uri, $start, $startopen, $end, $endopen) {}
+		public function addEdgeShape($value, $start, $startopen, $end, $endopen) {}
+		public function addColorChannel($value); // 0 - 255 range
+		public function addAlphaChannel($value); // float between 0.0 and 1.0
+		public function addSizeType($value); // float
+		public function addSpacePoint($value); // float
+		
+		private function setAllowedNodeShapeArray()
+		{
+			$this->allowedNodeShapeArray = array (
+				'disc',
+				'square',
+				'triangle',
+				'diamond',
+				'image',
+			);
+		}
+
+		private function setAllowedEdgeShapeArray()
+		{
+			$this->allowedEdgeShapeArray = array(
+				'solid',
+				'dotted',
+				'dashed',
+				'double'
+			)
+		}
 	}
 
 ?>
