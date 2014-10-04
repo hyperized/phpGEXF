@@ -3,7 +3,8 @@
 	class phpGEXF
 	{
 		private $includeViz = true;
-		private $gexfVersion = '1.0';
+		private $domVersion = '1.0';
+		private $gexfVersion = '1.2draft';
 		private $characterEncoding = 'UTF-8';
 		private $lastModifiedDataFormat = 'Y-m-d';
 
@@ -16,6 +17,9 @@
 
 		private $allowedMetadata;
 		private $allowedNodeShapeArray;
+		private $allowedEdgeShapeArray;
+		private $allowedEdgeTypeArray;
+		private $allowedModeArray;
 
 		public function __construct()
 		{
@@ -39,9 +43,9 @@
 		// Create basic DOM template
 		private function constructDom()
 		{
-			$this->xml = new DomDocument($this->$gexfVersion, $this->$characterEncoding);
+			$this->xml = new DomDocument($this->domVersion, $this->characterEncoding);
 			$this->xml->formatOutput = true;
-			$this->gexf = $this->xml->createElementNS(null, 'gexf');
+			$this->gexf = $this->xml->createElementNS(null, 'gexf'); // Create the tree!
 			$this->gexf = $this->xml->appendChild($this->gexf);
 		}
 
@@ -49,26 +53,17 @@
 		{
 			if($this->includeViz)
 			{
-				$this->gexf->setAttribute('xmlns:viz', 'http://www.gexf.net/1.2draft/viz');
+				$this->gexf->setAttribute('xmlns:viz', 'http://www.gexf.net/'.$this->gexfVersion.'/viz');
 			}
 
 			$this->gexf->setAttributeNS('http://www.w3.org/2000/xmlns/' ,'xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-			$this->gexf->setAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'schemaLocation', 'http://www.gexf.net/1.2draft http://www.gexf.net/1.2draft/gexf.xsd');
+			$this->gexf->setAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'schemaLocation', 'http://www.gexf.net/'.$this->gexfVersion.' http://www.gexf.net/'.$this->gexfVersion.'/gexf.xsd');
 		}
 
 		private function constructMetadata()
 		{
 			$this->meta = $this->gexf->appendChild($this->xml->createElement('meta'));
 			$this->meta->setAttribute('lastmodifieddate', date($this->lastModifiedDataFormat));
-		}
-
-		private function setAllowedMetadataArray()
-		{
-			$this->allowedMetadata = array(
-				'creator',
-				'keywords',
-				'description',
-			);
 		}
 
 		private function constructElements()
@@ -87,31 +82,63 @@
 
 			if (in_array($field,$this->allowedMetadata ))
 			{
-				$this->meta->appendChild($this->xml->createElement($field, $description));
+				if(is_string($field) && is_string($description))
+				{
+					$this->meta->appendChild($this->xml->createElement($field, $description));
+					return true;
+				}
+				else
+				{
+					return false;
+				}
 			}
 		}
 
 		public function addNode($id, $label)
 		{
-			$node = $xml->createElement('node');
-			//$node->setAttribute('id', '1');
-			//$node->setAttribute('label', 'Hello world!');
-			$nodes->appendChild($node);
+			if( ( is_int($id) || is_string($id) ) && is_string($label) ) // In Hierarchy, the node ID can be a string too!
+			{
+				$this->node = $this->xml->createElement('node');
+				$this->node->setAttribute('id', $id); // integer
+				$this->node->setAttribute('label', $label); // string
+				$this->nodes->appendChild($this->node);
+				return $id;
+			}
+			else
+			{
+				return false;
+			}
 		}
+
+
 		public function addEdge($source, $target) {}
 
+		public function setEdgeType($type) {} // string, allowedEdgeTypeArray[]
+		public function setEdgeMode($mode) {} // string, allowedModeArray[]
+		public function setEdgeWeight($weight) {} // float
+
 		// VIZ http://gexf.net/1.2draft/viz.xsd
-		public function addColor($r, $g, $b, $alpha, $start, $startopen, $end, $endopen) {} // RGB req, a
-		public function addPosition($x, $y, $z, $start, $startopen, $end, $endopen) {}
-		public function addSize($value, $start, $startopen, $end, $endopen) {}
-		public function addThickness($value, $start, $startopen, $end, $endopen) {}
-		public function addNodeShape($value, $uri, $start, $startopen, $end, $endopen) {}
-		public function addEdgeShape($value, $start, $startopen, $end, $endopen) {}
-		public function addColorChannel($value); // 0 - 255 range
-		public function addAlphaChannel($value); // float between 0.0 and 1.0
-		public function addSizeType($value); // float
-		public function addSpacePoint($value); // float
+		public function Color($r, $g, $b, $alpha, $start, $startopen, $end, $endopen) {} // RGB req, alpha
+		public function Position($x, $y, $z, $start, $startopen, $end, $endopen) {}
+		public function Size($value, $start, $startopen, $end, $endopen) {}
+		public function Thickness($value, $start, $startopen, $end, $endopen) {}
+		public function NodeShape($value, $uri, $start, $startopen, $end, $endopen) {}
+		public function EdgeShape($value, $start, $startopen, $end, $endopen) {}
+		public function ColorChannel($value); // 0 - 255 range
+		public function AlphaChannel($value); // float between 0.0 and 1.0
+		public function SizeType($value); // float
+		public function SpacePoint($value); // float
 		
+		// Set value range Arrays based on spec // http://gexf.net/1.2draft/gexf.xsd
+		private function setAllowedMetadataArray()
+		{
+			$this->allowedMetadata = array(
+				'creator',
+				'keywords',
+				'description',
+			);
+		}
+
 		private function setAllowedNodeShapeArray()
 		{
 			$this->allowedNodeShapeArray = array (
@@ -125,13 +152,33 @@
 
 		private function setAllowedEdgeShapeArray()
 		{
-			$this->allowedEdgeShapeArray = array(
+			$this->allowedEdgeShapeArray = array (
 				'solid',
 				'dotted',
 				'dashed',
-				'double'
-			)
+				'double',
+			);
+		}
+
+		private function setAllowedEdgeTypeArray()
+		{
+			$this->allowedEdgeTypeArray = array (
+				'directed',
+				'undirected',
+				'mutual'
+			);
+		}
+
+		private function setAllowedModeArray()
+		{
+			$this->allowedModeArray = array (
+				'static',
+				'dynamic',
+			);
 		}
 	}
+
+	class Node {} // Keep open the possibility to split into objects
+	class Edge {}
 
 ?>
