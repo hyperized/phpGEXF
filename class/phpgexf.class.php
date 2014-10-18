@@ -12,18 +12,63 @@
 		private $gexf;
 		private $meta;
 		private $graph;
+		private $attributes;
 		private $nodes;
 		private $edges;
 
-		private $allowedMetadata;
+		private $allowedGraphTypeArray;
+		private $allowedMetadataArray;
 		private $allowedNodeShapeArray;
 		private $allowedEdgeShapeArray;
 		private $allowedEdgeTypeArray;
 		private $allowedModeArray;
 
-		public function __construct()
+
+		public function __construct($type = 'basic', $includeViz = true)
 		{
+			// Check if VIZ should be included
+			if(is_bool($includeViz))
+			{
+				$this->includeViz = $includeViz;
+			}
+			else
+			{
+				throw new Exception('IncludeViz can only be TRUE or FALSE.');
+			}
+
+			// Call the generic constructor
 			$this->init();
+
+			// Fill the array if it has not been created yet.
+			if(!is_array($this->allowedGraphTypeArray))
+			{
+				$this->setallowedGraphTypeArray();
+			}
+
+			// Verify that the graph type is allowed
+			if (in_array($type, $this->allowedGraphTypeArray))
+			{
+				// See if the graph type is matching a type that requires complimentary constructors
+				if(is_string($field) && is_string($description))
+				{
+					switch($type)
+					{
+						case 'data':
+							//$this->constructDataGraph();
+						case 'dynamics':
+							//$this->constructDynamicsGraph();
+						case 'hierarchy':
+							//$this->constructHierarchyGraph();
+						case 'phylogenics':
+							//$this->constructPhylogenicsGraph();
+							throw new Exception('Graph type not implemented yet.');
+					}
+				}
+			}
+			else
+			{
+				throw new Exception('Graph type not allowed.');
+			}
 		}
 		public function __destruct() {}
 
@@ -39,6 +84,12 @@
 			$this->constructMetadata();
 			$this->constructElements();
 		}
+
+		// Not required yet, used in switch case statement in __construct
+		private function constructDataGraph() {}
+		private function constructDynamicsGraph() {}
+		private function constructHierarchyGraph() {}
+		private function constructPhylogenicsGraph() {}
 
 		// Create basic DOM template
 		private function constructDom()
@@ -73,14 +124,19 @@
 			$this->edges = $this->graph->appendChild($this->xml->createElement('edges'));
 		}
 
+		private function constructAttributes()
+		{
+			$this->attributes = $this->graph->appendChild($this->xml->createElement('attributes'));
+		}
+
 		public function addMetaData($field, $description)
 		{
-			if(!is_array($this->allowedMetadata))
+			if(!is_array($this->allowedMetadataArray))
 			{
 				$this->setAllowedMetadataArray();
 			}
 
-			if (in_array($field,$this->allowedMetadata ))
+			if (in_array($field,$this->allowedMetadataArray ))
 			{
 				if(is_string($field) && is_string($description))
 				{
@@ -92,6 +148,11 @@
 					return false;
 				}
 			}
+		}
+
+		public function addGraphAttributes($key, $value)
+		{
+			// Class, mode, study spec more
 		}
 
 		public function addNode($id, $label)
@@ -110,29 +171,38 @@
 			}
 		}
 
-
 		public function addEdge($source, $target) {}
-
 		public function setEdgeType($type) {} // string, allowedEdgeTypeArray[]
 		public function setEdgeMode($mode) {} // string, allowedModeArray[]
 		public function setEdgeWeight($weight) {} // float
 
-		// VIZ http://gexf.net/1.2draft/viz.xsd
+		// VIZ functions http://gexf.net/1.2draft/viz.xsd
 		public function Color($r, $g, $b, $alpha, $start, $startopen, $end, $endopen) {} // RGB req, alpha
 		public function Position($x, $y, $z, $start, $startopen, $end, $endopen) {}
 		public function Size($value, $start, $startopen, $end, $endopen) {}
 		public function Thickness($value, $start, $startopen, $end, $endopen) {}
 		public function NodeShape($value, $uri, $start, $startopen, $end, $endopen) {}
 		public function EdgeShape($value, $start, $startopen, $end, $endopen) {}
-		public function ColorChannel($value); // 0 - 255 range
-		public function AlphaChannel($value); // float between 0.0 and 1.0
-		public function SizeType($value); // float
-		public function SpacePoint($value); // float
-		
+		public function ColorChannel($value) {} // 0 - 255 range
+		public function AlphaChannel($value) {} // float between 0.0 and 1.0
+		public function SizeType($value) {} // float
+		public function SpacePoint($value) {} // float
+
 		// Set value range Arrays based on spec // http://gexf.net/1.2draft/gexf.xsd
+		private function setAllowedGraphTypeArray()
+		{
+			$this->allowedGraphTypeArray = array(
+				'basic',
+				'data',
+				'dynamics',
+				'hierarchy',
+				'phylogenics',
+			);
+		}
+
 		private function setAllowedMetadataArray()
 		{
-			$this->allowedMetadata = array(
+			$this->allowedMetadataArray = array(
 				'creator',
 				'keywords',
 				'description',

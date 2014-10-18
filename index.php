@@ -2,7 +2,7 @@
 
 	require('class/phpgexf.class.php');
 
-	$gexf = new phpGEXF();
+	$gexf = new phpGEXF('basic', true);
 	echo $gexf;
 
 ?>
